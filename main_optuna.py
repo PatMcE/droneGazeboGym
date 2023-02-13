@@ -32,8 +32,8 @@ if __name__ == '__main__':
     parser.add_argument('-eps_dec', type=float, default=2*1e-4, help='Linear factor for decreasing epsilon')#1e-3=1500steps,1e-4=0.0001,1e-5, 1e-4=0.0001,600 games
     parser.add_argument('-replace', type=int, default=1000, help='Interval for replacing target network')
     parser.add_argument('-algo', type=str, default='DuelingDDQNAgent', choices=['DQNAgent', 'DDQNAgent', 'DuelingDQNAgent', 'DuelingDDQNAgent'])
-    parser.add_argument('-root', type=str, default='/home/patmc_brave/catkin_ws/src/mavros-px4-vehicle/', help='root path for saving/loading')    
-    parser.add_argument('-path', type=str, default='/home/patmc_brave/catkin_ws/src/mavros-px4-vehicle/models/', help='path for model saving/loading')    
+    parser.add_argument('-root', type=str, default='/home/patmc/catkin_ws/src/mavros-px4-vehicle/', help='root path for saving/loading')    
+    parser.add_argument('-path', type=str, default='/home/patmc/catkin_ws/src/mavros-px4-vehicle/models/', help='path for model saving/loading')    
     parser.add_argument('-n_games', type=int, default=250)#200=5000steps
     parser.add_argument('-total_steps', type=int, default=500)#20000)    
     parser.add_argument('-render', type=bool, default=False)
@@ -58,7 +58,7 @@ if __name__ == '__main__':
         agent_ = getattr(Agents, args.algo)
         agent = agent_(gamma=args.gamma,#trial.suggest_categorical("gamma", [0.9, 0.99]),
                        epsilon=args.epsilon,
-                       lr=trial.suggest_float("lr", 0.5*1e-4, 5*1e-4),#suggest_float("lr", 0.00001, 0.001),#args.lr,
+                       lr=trial.suggest_categorical("lr", [1e-5, 1e-4, 1e-3]),#suggest_float("lr", 0.00001, 0.001),#args.lr,
                        n_actions=env.action_space.n,
                        image_input_dims=(env.image_observation_space.shape),
                        mem_size=args.max_mem,
@@ -162,7 +162,7 @@ if __name__ == '__main__':
         return np.mean(scores)
 
     study = optuna.create_study(study_name="D3QN Drone Gym Gazebo", direction="maximize")#, sampler=sampler, pruner=pruner)
-    study.optimize(objective, n_trials=8)#, catch=(RuntimeError,),  gc_after_trial=True)
+    study.optimize(objective, n_trials=6)#, catch=(RuntimeError,),  gc_after_trial=True)
 
     # Make the drone land.
     env.land_disconnect_drone()

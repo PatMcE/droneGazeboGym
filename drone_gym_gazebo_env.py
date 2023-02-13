@@ -54,8 +54,8 @@ class DroneGymGazeboEnv(gym.Env):
         #Set workspace limits:
 		self.work_space_x_max = 11.5
 		self.work_space_x_min = -1.0
-		self.work_space_y_max = 4.0#3.1
-		self.work_space_y_min = -4.0#-3.1
+		self.work_space_y_max = 7.0#3.1
+		self.work_space_y_min = -7.0#-3.1
 		self.work_space_z_max = 3.0
 		self.work_space_z_min = -0.1
 
@@ -247,7 +247,7 @@ class DroneGymGazeboEnv(gym.Env):
 
 		return obs_dict
 
-	def is_in_desired_position(self, current_position, epsilon=0.2):
+	def is_in_desired_position(self, current_position, epsilon=0.5):
 		"""
 		It return True if the current position is similar to the desired poistion
 		"""
@@ -289,11 +289,15 @@ class DroneGymGazeboEnv(gym.Env):
 		return is_inside
 
 	def drone_has_collided(self, roll, pitch, yaw):
+		"""
+		When the drone moves left, right or forward its roll, pitch and yaw remain at approximatley 0.
+		If the roll/pitch/yaw deviates much from 0 we know it has hit an object
+		"""
 		has_collided = True
 
-		self.max_roll = 0.3
-		self.max_pitch = 0.3
-		self.max_yaw = 0.15
+		self.max_roll = 0.25
+		self.max_pitch = 0.25
+		self.max_yaw = 0.1
 
 		if roll > -1*self.max_roll and roll <= self.max_roll:
 			if pitch > -1*self.max_pitch and pitch <= self.max_pitch:
@@ -313,7 +317,7 @@ class DroneGymGazeboEnv(gym.Env):
 
 		is_inside_workspace_now = self.is_inside_workspace(current_position)
 		has_drone_collided = self.drone_has_collided(roll, pitch, yaw)
-		has_reached_des_point = self.is_in_desired_position(current_position, 0.2)
+		has_reached_des_point = self.is_in_desired_position(current_position, 0.5)
 
 		if (has_drone_collided):
 			rospy.logwarn("drone has collided")
@@ -321,14 +325,7 @@ class DroneGymGazeboEnv(gym.Env):
 			x = round(gt_pose.pose.position.x, 2)
 			y = round(gt_pose.pose.position.y, 2)
 			z = round(gt_pose.pose.position.z, 2)
-
-			self.unpause_sim()
-			rospy.loginfo("send to x, y, " + str(self.work_space_z_max + 1.0))
-			cmd = SetPositionWithYawCmdBuilder.build(x=x, y=y, z=self.work_space_z_max + 1.0)
-			self.drone.set_pose2d(cmd)
-			rospy.sleep(8)
-			self.pause_sim()
-			#rospy.logwarn("roll, pitch, yaw = " + str(roll) + str(pitch) + str(yaw))
+			rospy.logwarn("roll, pitch, yaw = " + str(roll) + str(pitch) + str(yaw))
 
 		episode_done = not(is_inside_workspace_now) or has_drone_collided or has_reached_des_point
 
@@ -401,29 +398,36 @@ class DroneGymGazeboEnv(gym.Env):
 			z = round(gt_pose.pose.position.z, 2)
 
 			self.unpause_sim()
-			#rospy.loginfo("send to x-0.5, y, z")
-			#cmd = SetPositionWithYawCmdBuilder.build(x=x-0.5, y=y, z=z)
-			#self.drone.set_pose2d(cmd)
-			#rospy.sleep(6)
-
-			rospy.loginfo("send to x, y, " + str(self.work_space_z_max + 1.0))
-			cmd = SetPositionWithYawCmdBuilder.build(x=x, y=y, z=self.work_space_z_max + 1.0)
+			rospy.loginfo("send to x-1.0, y, z")
+			cmd = SetPositionWithYawCmdBuilder.build(x=x-1.0, y=y, z=z)
 			self.drone.set_pose2d(cmd)
-			rospy.sleep(6)
+			rospy.sleep(10)
 
-			rospy.loginfo("send to " + str(self.start_point.x) + ", " + str(self.start_point.y) + ", " + str(self.work_space_z_max + 1.0))
-			cmd = SetPositionWithYawCmdBuilder.build(x=self.start_point.x, y=self.start_point.y, z=self.work_space_z_max + 1.0)
-			self.drone.set_pose2d(cmd)
-			rospy.sleep(6)
+			rospy.logwarn("getting x/y before")
+			gt_pose = self.get_gt_pose()        
+			x = round(gt_pose.pose.position.x, 2)
+			y = round(gt_pose.pose.position.y, 2)
+			rospy.logwarn("getting x/y after")
 
-			rospy.loginfo("send to " + str(self.start_point.x) + ", " + str(self.start_point.y) + ", 0.5")
-			cmd = SetPositionWithYawCmdBuilder.build(x=self.start_point.x, y=self.start_point.y, z=0.5)
+			rospy.loginfo("send to x, y, " + str(self.work_space_z_max + 2.0))
+			cmd = SetPositionWithYawCmdBuilder.build(x=x, y=y, z=self.work_space_z_max + 2.0)
 			self.drone.set_pose2d(cmd)
-			rospy.sleep(6)
+			rospy.sleep(4)
+
+			rospy.loginfo("send to " + str(self.start_point.x) + ", " + str(self.start_point.y) + ", " + str(self.work_space_z_max + 2.0))
+			cmd = SetPositionWithYawCmdBuilder.build(x=self.start_point.x, y=self.start_point.y, z=self.work_space_z_max + 2.0)
+			self.drone.set_pose2d(cmd)
+			rospy.sleep(4)
 			
 			#rospy.loginfo("reset")
 			#self.resetWorld()
-			#rospy.sleep(7)
+			#rospy.sleep(5)
+
+			#rospy.loginfo("send to " + str(self.start_point.x) + ", " + str(self.start_point.y) + ", 0.5")
+			#cmd = SetPositionWithYawCmdBuilder.build(x=self.start_point.x, y=self.start_point.y, z=0.5)
+			#self.drone.set_pose2d(cmd)
+			#rospy.sleep(5)
+
 			self.pause_sim()
 
 		self.takeoff_drone()
@@ -450,7 +454,7 @@ class DroneGymGazeboEnv(gym.Env):
 		self.unpause_sim()
 		cmd = SetPositionWithYawCmdBuilder.build(x=self.start_point.x, y = self.start_point.y, z = self.z)
 		self.drone.set_pose2d(cmd)
-		rospy.sleep(5)
+		rospy.sleep(7)
 
 		rospy.loginfo("Changing to offboard mode.")
 		self.drone.set_mode(PX4_MODE_OFFBOARD)

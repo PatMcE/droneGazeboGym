@@ -15,7 +15,7 @@ import agents as Agents
 import time
 import drone_gym_gazebo_env
 import torch
-from torch.utils.tensorboard import SummaryWriter
+#from torch.utils.tensorboard import SummaryWriter
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'Drone StableBaselines')
@@ -24,16 +24,16 @@ if __name__ == '__main__':
     #parser.add_argument('-save', type=bool, default=False, help='If want to save files make true')
     parser.add_argument('-gamma', type=float, default=0.99, help='Discount factor for update equation.')    
     parser.add_argument('-epsilon', type=float, default=1, help='What epsilon starts at')    
-    parser.add_argument('-lr', type=float, default=0.0001, help='Learning rate')
+    parser.add_argument('-lr', type=float, default=1e-4, help='Learning rate')
     parser.add_argument('-max_mem', type=int, default=20000, help='Maximum size for memory replay buffer')    
     parser.add_argument('-bs', type=int, default=128, help='Batch size for replay memory sampling')    
     parser.add_argument('-eps_min', type=float, default=0.1, help='Minimum value for epsilon in epsilon-greedy action selection')
-    parser.add_argument('-eps_dec', type=float, default=1e-4, help='Linear factor for decreasing epsilon')#1e-4=0.0001,1e-5, 1e-4=0.0001,600 games
+    parser.add_argument('-eps_dec', type=float, default=0.5*1e-4, help='Linear factor for decreasing epsilon')#1e-4=0.0001,1e-5, 1e-4=0.0001,600 games
     parser.add_argument('-replace', type=int, default=1000, help='Interval for replacing target network')
     parser.add_argument('-algo', type=str, default='DuelingDDQNAgent', choices=['DQNAgent', 'DDQNAgent', 'DuelingDQNAgent', 'DuelingDDQNAgent'])
-    parser.add_argument('-root', type=str, default='/home/pm/catkin_ws/src/mavros-px4-vehicle/', help='root path for saving/loading')    
-    parser.add_argument('-path', type=str, default='/home/pm/catkin_ws/src/mavros-px4-vehicle/models/', help='path for model saving/loading')    
-    parser.add_argument('-n_games', type=int, default=500)#800
+    parser.add_argument('-root', type=str, default='/home/patmc/catkin_ws/src/mavros-px4-vehicle/', help='root path for saving/loading')    
+    parser.add_argument('-path', type=str, default='/home/patmc/catkin_ws/src/mavros-px4-vehicle/models/', help='path for model saving/loading')    
+    parser.add_argument('-n_games', type=int, default=1000)#800
     parser.add_argument('-total_steps', type=int, default=60)#20000)    
     parser.add_argument('-render', type=bool, default=False)
     args = parser.parse_args()
@@ -42,6 +42,16 @@ if __name__ == '__main__':
 
     env_name = 'DroneGymGazeboEnv-v0'
     env = gym.make(env_name)
+
+    # setup files for saving/loading:
+    fname = args.algo + '_env1B_lr' + str(args.lr) + '_bs' + str(args.bs) + '_episodes' + str(args.n_games)
+    log_path = args.root + 'logs/'
+    scores_file = args.root + 'scores/' + fname + '_scores.npy'
+    steps_file = args.root + 'scores/' + fname + '_steps.npy'
+    eps_history_file = args.root + 'scores/' + fname + '_eps_history.npy'
+    figure_file_start = args.root + 'plots/' + fname
+    figure_file = figure_file_start + '.png'    
+    times_file = args.root + 'times/' + fname + '_times.txt'
 
     best_score = -np.inf
     agent_ = getattr(Agents, args.algo)
@@ -58,31 +68,21 @@ if __name__ == '__main__':
                    total_steps=args.total_steps,
                    algo=args.algo,
                    env_name=env_name,
+                   fname = fname,
                    chkpt_dir=args.path)
 
     # intializations:
     n_steps = 0
     scores, eps_history, steps_array, times_array = [], [], [], []
-    #total_steps_to_take = args.total_steps
-    #games_played = 0
-    #reached_total_steps = False
 
-    # setup files for saving/loading:
-    #fname = args.algo + '_1_lr' + str(args.lr) + '_bs' + str(args.bs) + '_gamma' + str(args.gamma) + '_episodes' + str(args.n_games)
-    fname = args.algo + '_env1A_lr' + str(agent.lr) + '_gamma' + str(agent.gamma) + '_episodes' + str(args.n_games)
-    log_path = args.root + 'logs/'
-    scores_file = args.root + 'scores/' + fname + '_scores.npy'
-    steps_file = args.root + 'scores/' + fname + '_steps.npy'
-    eps_history_file = args.root + 'scores/' + fname + '_eps_history.npy'
-    figure_file_start = args.root + 'plots/' + fname
-    figure_file = figure_file_start + '.png'    
-    times_file = args.root + 'times/' + fname + '_times.txt'
-
-    if args.train:
-        tensorboard_writer = SummaryWriter(log_dir=log_path)
+    #if args.train:
+    #    tensorboard_writer = SummaryWriter(log_dir=log_path)
 
     if args.load_checkpoint:
         agent.load_models() #load Q models
+
+    if not args.train:
+        rospy.logwarn("not args train")
 
     # training / playing
     start_time = time.time()
@@ -119,13 +119,13 @@ if __name__ == '__main__':
         eps_history.append(agent.epsilon)
         mean_score = np.mean(scores[-100:])
 
-        if args.train:
-            tensorboard_writer.add_scalar('Reward vs Timesteps', score, n_steps)
-            tensorboard_writer.add_scalar('Reward vs Episodes', score, episode)
-            tensorboard_writer.add_scalar('Average Reward vs Timesteps', mean_score, n_steps)
-            tensorboard_writer.add_scalar('Average Reward vs Episodes', mean_score, episode)           
-            tensorboard_writer.add_scalar('Epsilon vs Timesteps', agent.epsilon, n_steps)
-            tensorboard_writer.add_scalar('Epsilon vs Episodes', agent.epsilon, episode)
+        #if args.train:
+        #    tensorboard_writer.add_scalar('Reward vs Timesteps', score, n_steps)
+        #    tensorboard_writer.add_scalar('Reward vs Episodes', score, episode)
+        #    tensorboard_writer.add_scalar('Average Reward vs Timesteps', mean_score, n_steps)
+        #    tensorboard_writer.add_scalar('Average Reward vs Episodes', mean_score, episode)           
+        #    tensorboard_writer.add_scalar('Epsilon vs Timesteps', agent.epsilon, n_steps)
+        #    tensorboard_writer.add_scalar('Epsilon vs Episodes', agent.epsilon, episode)
 
         print('episode ', episode, 'score: ', score, 'average score %.1f best average score %.1f epsilon %.2f' %
               (mean_score, best_score, agent.epsilon), 'steps ', n_steps)
@@ -145,7 +145,7 @@ if __name__ == '__main__':
         # plot the learning curve:
         plot_learning_curve(steps_array, scores, eps_history, figure_file)
         #close tensorboard_writer:
-        tensorboard_writer.close()
+        #tensorboard_writer.close()
 
     # Make the drone land.
     env.land_disconnect_drone()
