@@ -4,6 +4,7 @@
 ## Installation
 ### Step 1 - Ensure you have Ubuntu 18.04 (e.g. through a virtual machine)
 ### Step 2 - Upgrade python to python 3.7 (https://cloudbytes.dev/snippets/upgrade-python-to-latest-version-on-ubuntu-linux):
+```
 sudo add-apt-repository ppa:deadsnakes/ppa
 sudo apt update -y
 #apt list | grep python3.7
@@ -21,7 +22,9 @@ sudo apt install python3.7-distutils -y
 sudo apt install curl
 curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 sudo python3.7 get-pip.py
+```
 ### Step 3 - Install ROS Melodic (http://wiki.ros.org/melodic/Installation/Ubuntu):
+```
 sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
 sudo apt install curl
 curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -
@@ -29,7 +32,9 @@ sudo apt-get update -y
 sudo apt install ros-melodic-desktop-full -y
 echo "source /opt/ros/melodic/setup.bash" >> ~/.bashrc
 source ~/.bashrc
+```
 ### Step 4 - Various installs and create a catkin workspace:
+```
 #Various installs:
 sudo apt install python3-pip python3-all-dev python3-rospkg -y
 sudo apt install ros-melodic-desktop-full --fix-missing -y
@@ -51,7 +56,9 @@ cd ~/catkin_ws/
 catkin build
 source devel/setup.bash
 echo $ROS_PACKAGE_PATH
+```
 ### Step 5 - Get the Gazebo Model for the Uvify IFO-S (https://github.com/decargroup/ifo_gazebo):
+```
 cd ~/catkin_ws/src
 git clone https://github.com/decarsg/ifo_gazebo.git --recursive
 cd ..
@@ -97,7 +104,9 @@ echo "source ~/catkin_ws/src/ifo_gazebo/setup_ifo_gazebo.bash suppress" >> ~/.ba
 cd ~/catkin_ws
 source ~/.bashrc
 roslaunch ifo_gazebo ifo_empty_world_1.launch
+```
 ### Step 6 - ROS package that allows a user to communicate with PX4 autopilot using MAVROS (https://github.com/troiwill/mavros-px4-vehicle):
+```
 cd ~/catkin_ws/src
 git clone https://github.com/troiwill/mavros-px4-vehicle.git
 chmod +x mavros-px4-vehicle/scripts/*.py
@@ -106,3 +115,4 @@ ln -s mavros-px4-vehicle mavros-px4-vehicle
 cd ~/catkin_ws
 catkin build
 source devel/setup.bash
+```
